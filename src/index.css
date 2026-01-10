@@ -1,19 +1,25 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --background: #ffffff;
-    --foreground: #09090b;
-  }
-  
-  .dark {
-    --background: #09090b;
-    --foreground: #ffffff;
-  }
+:root {
+  --bg-app: #f1f5f9;
+  --bg-sidebar: #ffffff;
+  --bg-button: #e2e8f0; /* Color del botón en modo claro */
+  --text-main: #1e293b;
+  --text-accent: #64748b;
+  --border: #e2e8f0;
+}
+
+.dark {
+  --bg-app: #09090b;
+  --bg-sidebar: #18181b;
+  --bg-button: #27272a; /* Color del botón en modo oscuro */
+  --text-main: #f8fafc;
+  --text-accent: #94a3b8;
+  --border: #27272a;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--bg-app);
+  color: var(--text-main);
   transition: background-color 0.3s ease;
 }
