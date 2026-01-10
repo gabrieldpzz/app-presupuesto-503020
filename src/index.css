@@ -1,25 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --bg-app: #f1f5f9;
-  --bg-sidebar: #ffffff;
-  --bg-button: #e2e8f0; /* Color del botón en modo claro */
-  --text-main: #1e293b;
+  /* En Modo Claro, estas variables deben ser CLARAS */
+  --bg-app: #f1f5f9;      /* Gris muy suave de fondo */
+  --bg-sidebar: #ffffff;  /* BLANCO PURO para las tarjetas */
+  --bg-button: #e2e8f0;
+  --text-main: #0f172a;   /* Texto oscuro */
   --text-accent: #64748b;
   --border: #e2e8f0;
 }
 
 .dark {
+  /* En Modo Oscuro, todo se invierte */
   --bg-app: #09090b;
-  --bg-sidebar: #18181b;
-  --bg-button: #27272a; /* Color del botón en modo oscuro */
+  --bg-sidebar: #121214;
+  --bg-button: #27272a;
   --text-main: #f8fafc;
-  --text-accent: #94a3b8;
+  --text-accent: #a1a1aa;
   --border: #27272a;
-}
-
-body {
-  background-color: var(--bg-app);
-  color: var(--text-main);
-  transition: background-color 0.3s ease;
 }

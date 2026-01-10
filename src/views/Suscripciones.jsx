@@ -1,42 +1,68 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { registrarPago } from '../lib/paymentService';
-import { Plus, Home as HomeIcon, Loader2, Image as ImageIcon, Pencil, Trash2, Check } from 'lucide-react';
-import ModalNuevoServicio from '../components/ModalNuevoServicio';
+import { Plus, Smartphone, Loader2, Image as ImageIcon, Pencil, Trash2, Check } from 'lucide-react';
+import ModalNuevaSuscripcion from '../components/ModalNuevaSuscripcion';
 import ModalPagar from '../components/ModalPagar';
 import { calcularEstadoPago } from '../lib/dateUtils';
 
-export default function Servicios() {
-  const [servicios, setServicios] = useState([]);
+export default function Suscripciones() {
+  const [suscripciones, setSuscripciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingService, setEditingService] = useState(null);
+  const [editingSub, setEditingSub] = useState(null);
   const [pagarItem, setPagarItem] = useState(null);
-  const [processingId, setProcessingId] = useState(null);
 
-  useEffect(() => { getServicios(); }, []);
+  useEffect(() => {
+    getSuscripciones();
+  }, []);
 
-  async function getServicios() {
+  async function getSuscripciones() {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('servicios').select('*').order('activo', { ascending: false });
+      const { data, error } = await supabase
+        .from('suscripciones')
+        .select('*')
+        .order('activo', { ascending: false }); // Activos primero
+
       if (error) throw error;
-      setServicios(data || []);
-    } catch (err) { console.error(err); } finally { setLoading(false); }
+      setSuscripciones(data || []);
+    } catch (err) {
+      console.error('Error al cargar datos', err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const onConfirmarPago = async (item, tipo, cuentaId) => {
     try {
       await registrarPago(item, tipo, cuentaId);
-      await getServicios();
+      await getSuscripciones();
       setPagarItem(null);
-    } catch (error) { alert("Error al procesar el pago"); }
+    } catch (error) {
+      alert("Error al procesar el pago");
+    }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar servicio?')) return;
-    await supabase.from('servicios').delete().eq('id', id);
-    getServicios();
+    if (!window.confirm("¿Seguro que quieres eliminar esta suscripción?")) return;
+    try {
+      const { error } = await supabase.from('suscripciones').delete().eq('id', id);
+      if (error) throw error;
+      getSuscripciones();
+    } catch (err) {
+      alert("Error al eliminar: " + err.message);
+    }
+  };
+
+  const handleEdit = (sub) => {
+    setEditingSub(sub);
+    setIsModalOpen(true);
+  };
+
+  const handleNew = () => {
+    setEditingSub(null);
+    setIsModalOpen(true);
   };
 
   return (
@@ -45,31 +71,35 @@ export default function Servicios() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-[var(--bg-button)] rounded-lg text-indigo-600 border border-[var(--border)]">
-            <HomeIcon size={20} />
+          <div className="p-2 bg-[var(--bg-button)] rounded-lg text-purple-600 border border-[var(--border)]">
+            <Smartphone size={20} />
           </div>
-          <h1 className="text-2xl font-black text-[var(--text-main)]">Servicios</h1>
+          <h1 className="text-2xl font-black text-[var(--text-main)]">Suscripciones</h1>
         </div>
+        
         <button 
-          onClick={() => { setEditingService(null); setIsModalOpen(true); }} 
-          className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 cursor-pointer active:scale-95"
+          onClick={handleNew}
+          className="bg-purple-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-purple-700 hover:scale-105 transition-all shadow-lg shadow-purple-500/20 cursor-pointer active:scale-95"
         >
-          <Plus size={18} /> Nuevo
+          <Plus size={18} /> Nueva
         </button>
       </div>
 
       {/* GRID */}
       {loading ? (
-        <div className="flex justify-center p-20"><Loader2 className="animate-spin text-indigo-500" size={40} /></div>
+        <div className="p-20 flex justify-center">
+          <Loader2 className="animate-spin text-purple-500" size={40} />
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {servicios.map((s) => {
-            const info = calcularEstadoPago(s.ultimo_pago, s.frecuencia);
-            
-            // CORRECCIÓN CLAVE: Usar variables CSS igual que en Suscripciones
-            // bg-[var(--bg-sidebar)] asegura que sea blanca en Light y oscura en Dark
-            const baseStyle = "bg-[var(--bg-sidebar)] border border-[var(--border)] shadow-sm hover:shadow-md";
-            const inactiveStyle = "opacity-60 grayscale bg-[var(--bg-app)]"; // Un poco más oscuro si es inactivo
+          {suscripciones.map((s) => {
+             // 1. CALCULAR ESTADO
+             const info = calcularEstadoPago(s.ultimo_pago, s.frecuencia || 'mensual');
+
+             // 2. ESTILO DE TARJETA (Igual que Servicios)
+             // Usamos variables CSS para asegurar blanco puro en modo claro
+             const baseStyle = "bg-[var(--bg-sidebar)] border border-[var(--border)] shadow-sm hover:shadow-md";
+             const inactiveStyle = "opacity-60 grayscale bg-[var(--bg-app)] border border-[var(--border)]";
 
             return (
               <div 
@@ -79,25 +109,25 @@ export default function Servicios() {
                  
                  {/* Botones Flotantes */}
                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <button onClick={() => { setEditingService(s); setIsModalOpen(true); }} className="p-2 bg-[var(--bg-button)] hover:bg-zinc-200 rounded-full text-indigo-600 shadow-sm border border-[var(--border)] cursor-pointer"><Pencil size={14} /></button>
+                    <button onClick={() => handleEdit(s)} className="p-2 bg-[var(--bg-button)] hover:bg-zinc-200 rounded-full text-indigo-600 shadow-sm border border-[var(--border)] cursor-pointer"><Pencil size={14} /></button>
                     <button onClick={() => handleDelete(s.id)} className="p-2 bg-[var(--bg-button)] hover:bg-zinc-200 rounded-full text-red-500 shadow-sm border border-[var(--border)] cursor-pointer"><Trash2 size={14} /></button>
                  </div>
 
                  {/* Header (Logo + Nombre) */}
                  <div className="flex items-center gap-4 mb-5">
                    <div className="w-14 h-14 bg-[var(--bg-app)] rounded-2xl border border-[var(--border)] p-2 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                      {s.logo_url ? <img src={s.logo_url} className="w-full h-full object-contain" /> : <ImageIcon className="text-[var(--text-accent)]" size={24} />}
+                      {s.logo_url ? <img src={s.logo_url} className="w-full h-full object-contain" alt={s.nombre} /> : <ImageIcon className="text-[var(--text-accent)]" size={24} />}
                    </div>
                    <div>
                       <h3 className="text-xl font-black text-[var(--text-main)] leading-tight mb-1">{s.nombre}</h3>
                       <span className="inline-block bg-[var(--bg-app)] text-[var(--text-accent)] text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border border-[var(--border)]">
-                        {s.frecuencia}
+                        {s.frecuencia || 'Mensual'}
                       </span>
                    </div>
                  </div>
 
                  {/* BLOQUE CENTRAL DE COLOR (INFO) */}
-                 {/* Este usa los colores sólidos definidos en dateUtils (Verde/Rojo/Gris) */}
+                 {/* Colores Sólidos desde dateUtils */}
                  <div className={`${info.bgInfo} rounded-2xl p-5 mb-6 flex-1 transition-colors duration-300 border border-black/5 dark:border-white/5`}>
                     
                     {/* Fila 1: Último Pago */}
@@ -154,12 +184,18 @@ export default function Servicios() {
         </div>
       )}
 
-      <ModalNuevoServicio isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onRefresh={getServicios} editingService={editingService} />
+      {/* MODAL */}
+      <ModalNuevaSuscripcion 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onRefresh={getSuscripciones}
+        editingSubscription={editingSub}
+      />
       <ModalPagar 
         isOpen={!!pagarItem}
         onClose={() => setPagarItem(null)}
         item={pagarItem}
-        tipo="servicio"
+        tipo="suscripcion"
         onConfirm={onConfirmarPago}
       />
     </div>
