@@ -1,14 +1,23 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { realizarTransferencia } from '../lib/expenseService';
-import { X, ArrowRightLeft, Loader2, ArrowRight } from 'lucide-react';
+import { X, ArrowRightLeft, Loader2, ArrowRight, PiggyBank } from 'lucide-react';
 
 export default function ModalTransferencia({ isOpen, onClose, onRefresh }) {
   const [loading, setLoading] = useState(false);
   const [cuentas, setCuentas] = useState([]);
+  
+  // Nuevo estado para marcar como ahorro
+  const [esAhorro, setEsAhorro] = useState(false);
+
   const [form, setForm] = useState({ origen: '', destino: '', monto: '' });
 
-  useEffect(() => { if (isOpen) fetchCuentas(); }, [isOpen]);
+  useEffect(() => { 
+      if (isOpen) {
+          fetchCuentas();
+          setEsAhorro(false); // Resetear al abrir
+      }
+  }, [isOpen]);
 
   async function fetchCuentas() {
     const { data } = await supabase.from('cuentas').select('*').order('saldo', { ascending: false });
@@ -23,7 +32,8 @@ export default function ModalTransferencia({ isOpen, onClose, onRefresh }) {
     if (form.origen === form.destino) return alert("La cuenta de origen y destino no pueden ser la misma.");
     setLoading(true);
     try {
-      await realizarTransferencia(form.origen, form.destino, parseFloat(form.monto));
+      // Pasamos el parámetro esAhorro (true/false)
+      await realizarTransferencia(form.origen, form.destino, parseFloat(form.monto), esAhorro);
       onRefresh();
       onClose();
       setForm(prev => ({ ...prev, monto: '' }));
@@ -71,9 +81,31 @@ export default function ModalTransferencia({ isOpen, onClose, onRefresh }) {
              </div>
            </div>
 
+           {/* SWITCH: Contar como Ahorro */}
+           <div 
+             onClick={() => setEsAhorro(!esAhorro)}
+             className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center gap-3 ${esAhorro ? 'bg-emerald-500/10 border-emerald-500' : 'bg-[var(--bg-app)] border-[var(--border)] hover:border-amber-300'}`}
+           >
+              <div className={`p-2 rounded-full transition-colors ${esAhorro ? 'bg-emerald-500 text-white' : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-400'}`}>
+                 <PiggyBank size={20} />
+              </div>
+              <div className="flex-1">
+                 <p className={`font-bold text-sm ${esAhorro ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-main)]'}`}>
+                    Contar como Ahorro
+                 </p>
+                 <p className="text-[10px] text-[var(--text-accent)] leading-tight">
+                    Si activas esto, se sumará a tu meta del 20% en las estadísticas.
+                 </p>
+              </div>
+              {/* Toggle Visual */}
+              <div className={`w-10 h-6 rounded-full p-1 transition-colors ${esAhorro ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}>
+                 <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${esAhorro ? 'translate-x-4' : ''}`} />
+              </div>
+           </div>
+
            <button disabled={loading} className="w-full bg-amber-500 text-white py-4 rounded-3xl font-black flex justify-center gap-2 hover:bg-amber-600 transition-all shadow-xl shadow-amber-500/20 active:scale-95 cursor-pointer disabled:opacity-50">
-            {loading ? <Loader2 className="animate-spin" /> : <><ArrowRightLeft size={20} /> TRANSFERIR</>}
-          </button>
+             {loading ? <Loader2 className="animate-spin" /> : <><ArrowRightLeft size={20} /> TRANSFERIR</>}
+           </button>
         </form>
       </div>
     </div>

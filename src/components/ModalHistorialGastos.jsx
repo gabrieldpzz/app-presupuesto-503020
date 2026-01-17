@@ -1,6 +1,6 @@
-import { X, TrendingDown, Calendar, Wallet, Pencil, Trash2 } from 'lucide-react';
+import { X, TrendingDown, Calendar, Wallet, Pencil, Trash2, Eye } from 'lucide-react';
 
-export default function ModalHistorialGastos({ isOpen, onClose, gastos, onEdit, onDelete }) {
+export default function ModalHistorialGastos({ isOpen, onClose, gastos, onEdit, onDelete, onViewSplit }) {
   if (!isOpen) return null;
 
   return (
@@ -46,7 +46,7 @@ export default function ModalHistorialGastos({ isOpen, onClose, gastos, onEdit, 
                             <div className="w-6 h-6 bg-white rounded-full p-0.5 border border-[var(--border)] shadow-sm flex items-center justify-center">
                                {item.cuentas.logo_url ? <img src={item.cuentas.logo_url} className="w-full h-full object-contain"/> : <Wallet size={12} className="text-zinc-400"/>}
                             </div>
-                            <span className="text-xs font-bold text-[var(--text-main)]">{item.cuentas.nombre}</span>
+                            <span className="text-xs font-bold text-[var(--text-main)] truncate max-w-[100px]">{item.cuentas.nombre}</span>
                          </div>
                        )}
                     </td>
@@ -55,6 +55,15 @@ export default function ModalHistorialGastos({ isOpen, onClose, gastos, onEdit, 
                            <span className="text-lg font-black text-red-500">-${item.monto.toLocaleString()}</span>
                            
                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {item.deudas && item.deudas.length > 0 && (
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); onViewSplit(item); }} 
+                                  className="p-1.5 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg cursor-pointer"
+                                  title="Ver División"
+                                >
+                                  <Eye size={14} />
+                                </button>
+                              )}
                               {onEdit && <button onClick={() => onEdit(item)} className="p-1.5 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg cursor-pointer"><Pencil size={14}/></button>}
                               {onDelete && <button onClick={() => onDelete(item)} className="p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg cursor-pointer"><Trash2 size={14}/></button>}
                            </div>

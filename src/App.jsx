@@ -14,6 +14,8 @@ import ModalNuevoGasto from './components/ModalNuevoGasto';
 import ModalTransferencia from './components/ModalTransferencia';
 import ModalNuevaCuenta from './components/ModalNuevaCuenta';
 import ModalDepositarAhorro from './components/ModalDepositarAhorro';
+import ModalCuentasPorCobrar from './components/ModalCuentasPorCobrar';
+import ModalDetalleDeudas from './components/ModalDetalleDeudas';
 import ModalConfirmacion from './components/ModalConfirmacion';
 import { supabase } from './lib/supabaseClient';
 import { calcularEstadoPago } from './lib/dateUtils';
@@ -23,7 +25,7 @@ import { getMetas } from './lib/savingsService';
 import { 
   Wallet, Sun, Moon, TrendingUp, Coffee, Smartphone,
   PlusCircle, MinusCircle, CreditCard, ArrowLeftRight, Target, Settings,
-  ChevronRight, Calendar, ArrowUpRight, ArrowDownRight, Pencil, Trash2
+  ChevronRight, Calendar, ArrowUpRight, ArrowDownRight, Pencil, Trash2, Users, Eye
 } from 'lucide-react';
 
 function App() {
@@ -47,6 +49,9 @@ function App() {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isCuentaModalOpen, setIsCuentaModalOpen] = useState(false);
   const [isAhorroModalOpen, setIsAhorroModalOpen] = useState(false);
+  const [isDeudasOpen, setIsDeudasOpen] = useState(false);
+  const [isDetalleDeudasOpen, setIsDetalleDeudasOpen] = useState(false);
+  const [selectedGastoSplit, setSelectedGastoSplit] = useState(null);
 
   const [isHistorialIngresosOpen, setIsHistorialIngresosOpen] = useState(false);
   const [historialIngresosCompleto, setHistorialIngresosCompleto] = useState([]);
@@ -153,6 +158,11 @@ function App() {
     setIsHistorialGastosOpen(true);
   };
 
+  const openDetalleDeudas = (gasto) => {
+    setSelectedGastoSplit(gasto);
+    setIsDetalleDeudasOpen(true);
+  };
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[var(--bg-app)] text-[var(--text-main)] transition-colors duration-300">
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} setView={setView} currentView={view} />
@@ -207,6 +217,7 @@ function App() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                         <QuickButton icon={<PlusCircle />} label="Nuevo Ingreso" color="text-emerald-500" onClick={() => { setEditingIngreso(null); setIsConfigModalOpen(true); }} />
                         <QuickButton icon={<MinusCircle />} label="Gasto Rápido" color="text-red-500" onClick={() => { setEditingGasto(null); setIsGastoModalOpen(true); }} />
+                        <QuickButton icon={<Users />} label="Cobrar" color="text-indigo-500" onClick={() => setIsDeudasOpen(true)} />
                         <QuickButton icon={<CreditCard />} label="Nueva Cuenta" color="text-indigo-500" onClick={() => setIsCuentaModalOpen(true)} />
                         <QuickButton icon={<ArrowLeftRight />} label="Transferir" color="text-amber-500" onClick={() => setIsTransferModalOpen(true)} />
                         <QuickButton icon={<Target />} label="Ahorro" color="text-purple-500" onClick={() => setIsAhorroModalOpen(true)} />
@@ -260,7 +271,7 @@ function App() {
                                     <div className="text-center py-10 opacity-50 text-xs">Sin gastos.</div>
                                 ) : (
                                     gastosRecientes.map(gasto => (
-                                        <div key={gasto.id} className="flex items-center gap-3 p-3 rounded-2xl bg-[var(--bg-app)] border border-transparent hover:border-[var(--border)] transition-all group relative pr-14">
+                                        <div key={gasto.id} className="flex items-center gap-3 p-3 rounded-2xl bg-[var(--bg-app)] border border-transparent hover:border-[var(--border)] transition-all group relative pr-20">
                                             <div className="p-2 rounded-xl bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400 shrink-0"><ArrowDownRight size={18} /></div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-bold text-[var(--text-main)] text-sm truncate capitalize">{gasto.descripcion || gasto.tipo}</p>
@@ -269,6 +280,15 @@ function App() {
                                             <span className="font-black text-red-500 text-sm whitespace-nowrap">-${gasto.monto.toLocaleString()}</span>
 
                                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--bg-app)] pl-2">
+                                                {gasto.deudas && gasto.deudas.length > 0 && (
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); openDetalleDeudas(gasto); }} 
+                                                        className="p-1.5 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg cursor-pointer"
+                                                        title="Ver División"
+                                                    >
+                                                        <Eye size={14} />
+                                                    </button>
+                                                )}
                                                 <button onClick={() => handleEditGasto(gasto)} className="p-1.5 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg cursor-pointer"><Pencil size={14} /></button>
                                                 <button onClick={() => requestDelete(gasto, 'gasto')} className="p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg cursor-pointer"><Trash2 size={14} /></button>
                                             </div>
@@ -394,6 +414,13 @@ function App() {
       <ModalTransferencia isOpen={isTransferModalOpen} onClose={() => setIsTransferModalOpen(false)} onRefresh={recalcularTodo} />
       <ModalNuevaCuenta isOpen={isCuentaModalOpen} onClose={() => setIsCuentaModalOpen(false)} onRefresh={recalcularTodo} />
       <ModalDepositarAhorro isOpen={isAhorroModalOpen} onClose={() => setIsAhorroModalOpen(false)} onRefresh={recalcularTodo} />
+      <ModalCuentasPorCobrar isOpen={isDeudasOpen} onClose={() => setIsDeudasOpen(false)} onRefresh={recalcularTodo} />
+      <ModalDetalleDeudas 
+        isOpen={isDetalleDeudasOpen} 
+        onClose={() => setIsDetalleDeudasOpen(false)} 
+        gasto={selectedGastoSplit} 
+        onRefresh={recalcularTodo} 
+      />
       
       <ModalHistorialIngresos 
         isOpen={isHistorialIngresosOpen} 
@@ -406,8 +433,17 @@ function App() {
         isOpen={isHistorialGastosOpen} 
         onClose={() => setIsHistorialGastosOpen(false)} 
         gastos={historialGastosCompleto}
-        onEdit={(g) => { setIsHistorialGastosOpen(false); handleEditGasto(g); }}
-        onDelete={(g) => { setIsHistorialGastosOpen(false); requestDelete(g, 'gasto'); }}
+        onEdit={(g) => { 
+          setIsHistorialGastosOpen(false); 
+          handleEditGasto(g); 
+        }}
+        onDelete={(g) => { 
+          setIsHistorialGastosOpen(false); 
+          requestDelete(g, 'gasto'); }}
+        onViewSplit={(g) => {
+          setIsHistorialGastosOpen(false);
+          openDetalleDeudas(g);
+        }}
       />
 
       <ModalConfirmacion 
